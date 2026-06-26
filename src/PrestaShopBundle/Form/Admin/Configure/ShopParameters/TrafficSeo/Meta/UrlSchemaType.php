@@ -15,6 +15,7 @@ use PrestaShopException;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -52,6 +53,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('product_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_product_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('category_rule', TranslatableType::class, [
                 'label' => $this->trans(
@@ -62,6 +74,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('category_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_category_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('supplier_rule', TranslatableType::class, [
                 'label' => $this->trans(
@@ -72,6 +95,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('supplier_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_supplier_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('manufacturer_rule', TranslatableType::class, [
                 'label' => $this->trans(
@@ -82,6 +116,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('manufacturer_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_manufacturer_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('cms_rule', TranslatableType::class, [
                 'label' => $this->trans(
@@ -92,6 +137,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('cms_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_cms_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('cms_category_rule', TranslatableType::class, [
                 'label' => $this->trans(
@@ -102,6 +158,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('cms_category_rule'),
                 'multistore_configuration_key' => 'PS_ROUTE_cms_category_rule',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ])
             ->add('module', TranslatableType::class, [
                 'label' => $this->trans(
@@ -112,6 +179,17 @@ class UrlSchemaType extends TranslatorAwareType
                 'only_enabled_locales' => false,
                 'help' => $this->getKeywords('module'),
                 'multistore_configuration_key' => 'PS_ROUTE_module',
+                'options' => [
+                    'required' => true,
+                    'constraints' => [
+                        new NotBlank([
+                            'message' => $this->trans(
+                                'This field cannot be empty.',
+                                'Admin.Notifications.Error'
+                            ),
+                        ]),
+                    ],
+                ],
             ]);
     }
 
