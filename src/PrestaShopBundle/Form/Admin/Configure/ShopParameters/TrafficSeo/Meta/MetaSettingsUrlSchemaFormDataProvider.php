@@ -87,11 +87,16 @@ final class MetaSettingsUrlSchemaFormDataProvider implements FormDataProviderInt
         $patternErrors = [];
         $fieldErrors = [];
         foreach ($data as $routeId => $routeData) {
+            // The form also carries multistore checkbox helper fields (multistore_<route>)
+            // whose value is a bool, not a per-language array of route patterns — skip them
+            // before iterating, otherwise foreach() fatals on the bool in single-shop context.
+            if (!is_array($routeData)) {
+                continue;
+            }
             foreach ($routeData as $langId => $routeRule) {
-                // Skip multistore checkbox helper fields added to the form, they are not route patterns.
-                if (str_starts_with($routeId, 'multistore_') && is_bool($routeRule)) {
-                    continue;
-                }
+                // An empty field arrives as null; normalise to string so the strictly-typed
+                // validators and htmlspecialchars() don't fatal on null.
+                $routeRule = (string) $routeRule;
 
                 if (!$this->routeValidator->isRoutePattern($routeRule)) {
                     $patternErrors[] = $this->translator->trans(
