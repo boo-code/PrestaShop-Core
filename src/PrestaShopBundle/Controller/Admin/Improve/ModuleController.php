@@ -106,17 +106,34 @@ class ModuleController extends ModuleAbstractController
         // Get accessed module object
         /** @var ModuleAdapter $module */
         $module = $this->getModuleRepository()->getModule($module_name);
+
+        // Nothing below can run without an instance: getContent() is read off it a few lines down, and
+        // method_exists() rejects null, so falling through here ends in a TypeError rather than the message.
         if (!$module->getInstance()) {
             $this->addFlash('error', $this->trans(
                 'The module "%modulename%" cannot be found',
                 ['%modulename%' => $module_name],
                 'Admin.Modules.Notification'
             ));
-            $layoutSubTitle = null;
-        } else {
-            $this->saveModuleHistory($module);
-            $layoutSubTitle = $module->getInstance()->displayName;
+
+            return $this->redirectToRoute('admin_module_manage');
         }
+
+        // A disabled module still hooks nothing and runs nothing, so its configuration page would be showing
+        // and saving settings for something that is not running. The module list still offers the action, so
+        // say why rather than rendering it.
+        if (!$module->isActive()) {
+            $this->addFlash('error', $this->trans(
+                'You cannot configure the module "%modulename%" while it is disabled. Enable it first.',
+                ['%modulename%' => $module_name],
+                'Admin.Modules.Notification'
+            ));
+
+            return $this->redirectToRoute('admin_module_manage');
+        }
+
+        $this->saveModuleHistory($module);
+        $layoutSubTitle = $module->getInstance()->displayName;
 
         // This controller is not purely migrated, in the sense that it still relies on the legacy layout because module implementing
         // getContent need the default theme to be working as expected
