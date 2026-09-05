@@ -30,6 +30,7 @@ use PrestaShop\PrestaShop\Core\Exception\CoreException;
 use PrestaShop\PrestaShop\Core\Form\IdentifiableObject\Builder\FormBuilderInterface;
 use PrestaShop\PrestaShop\Core\Form\IdentifiableObject\Handler\FormHandlerInterface;
 use PrestaShop\PrestaShop\Core\Image\Exception\CannotUnlinkImageException;
+use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageFileNotFoundException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\MemoryLimitException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageConstraintException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageSizeException;
@@ -295,6 +296,11 @@ class ImageController extends PrestaShopAdminController
                     'Admin.Notifications.Error'
                 ),
             ],
+            ImageFileNotFoundException::class => $this->trans(
+                'The uploaded file could not be found on the server. It may have been removed before the upload finished.',
+                [],
+                'Admin.Notifications.Error'
+            ),
             MemoryLimitException::class => $this->trans(
                 'Due to memory limit restrictions, this image cannot be loaded. Please increase your memory_limit value via your server\'s configuration settings.',
                 [],

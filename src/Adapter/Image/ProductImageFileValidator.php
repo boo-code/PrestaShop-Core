@@ -10,6 +10,7 @@ namespace PrestaShop\PrestaShop\Adapter\Image;
 use ImageManager;
 use PrestaShop\Decimal\DecimalNumber;
 use PrestaShop\PrestaShop\Core\Configuration\DataConfigurationInterface;
+use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageFileNotFoundException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\MemoryLimitException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageSizeException;
 
@@ -33,10 +34,13 @@ class ProductImageFileValidator extends ImageValidator
     /**
      * @param string $filePath
      *
+     * @throws ImageFileNotFoundException
      * @throws UploadedImageSizeException
      */
     public function assertFileUploadLimits(string $filePath): void
     {
+        $this->assertFileExists($filePath);
+
         $size = new DecimalNumber((string) filesize($filePath));
         $maxUploadSizeBytes = new DecimalNumber((string) $this->maxUploadSize);
         $maxUploadQuotaMegaBytes = new DecimalNumber((string) $this->uploadQuotaConfiguration->getConfiguration()['max_size_product_image']);

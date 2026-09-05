@@ -36,11 +36,14 @@ class ImageValidator
     /**
      * @param string $filePath
      *
+     * @throws ImageFileNotFoundException
      * @throws ImageUploadException
      * @throws UploadedImageConstraintException
      */
     public function assertFileUploadLimits(string $filePath): void
     {
+        $this->assertFileExists($filePath);
+
         $size = filesize($filePath);
 
         if ($this->maxUploadSize > 0 && $size > $this->maxUploadSize) {
@@ -65,13 +68,26 @@ class ImageValidator
             $allowedMimeTypes = ImageManagerCore::MIME_TYPE_SUPPORTED;
         }
 
-        if (!is_file($filePath)) {
-            throw new ImageFileNotFoundException(sprintf('Image file "%s" not found', $filePath));
-        }
+        $this->assertFileExists($filePath);
 
         $mime = mime_content_type($filePath);
         if (!ImageManager::isRealImage($filePath, $mime, $allowedMimeTypes)) {
             throw new UploadedImageConstraintException(sprintf('Image type "%s" is not allowed, allowed types are: %s', $mime, implode(',', $allowedMimeTypes)), UploadedImageConstraintException::UNRECOGNIZED_FORMAT);
+        }
+    }
+
+    /**
+     * WHY: every assertion here reads the file from disk, and an upload whose temporary file has
+     * gone missing reaches them with a path that no longer resolves. Without this guard the size
+     * check runs filesize() on it, which warns and returns false, and the caller ends up reporting
+     * whatever the false value breaks next instead of the actual problem.
+     *
+     * @throws ImageFileNotFoundException
+     */
+    protected function assertFileExists(string $filePath): void
+    {
+        if (!is_file($filePath)) {
+            throw new ImageFileNotFoundException(sprintf('Image file "%s" not found', $filePath));
         }
     }
 }

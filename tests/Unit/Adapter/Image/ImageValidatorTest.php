@@ -74,6 +74,20 @@ class ImageValidatorTest extends TestCase
         $this->imageValidator->assertIsValidImageType($filePath);
     }
 
+    /**
+     * @dataProvider getInvalidPathsToAFile
+     *
+     * @param string $filePath
+     */
+    public function testItThrowsExceptionWhenAssertingUploadLimitsOnAMissingFile(string $filePath): void
+    {
+        // WHY: every assertion in this validator reads the file. Without the existence guard the
+        // size check called filesize() on the missing path, which warns and returns false, and the
+        // caller reported whatever that false value broke next instead of the missing file.
+        $this->expectException(ImageFileNotFoundException::class);
+        $this->imageValidator->assertFileUploadLimits($filePath);
+    }
+
     public function getInvalidMaxUploadSizesForFile(): Generator
     {
         $logoPath = DummyFileUploader::getDummyFilesPath() . 'logo.jpg';

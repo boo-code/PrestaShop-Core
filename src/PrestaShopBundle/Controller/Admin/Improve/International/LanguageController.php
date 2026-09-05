@@ -24,6 +24,7 @@ use PrestaShop\PrestaShop\Core\Domain\Language\QueryResult\EditableLanguage;
 use PrestaShop\PrestaShop\Core\Form\IdentifiableObject\Builder\FormBuilderInterface;
 use PrestaShop\PrestaShop\Core\Form\IdentifiableObject\Handler\FormHandlerInterface;
 use PrestaShop\PrestaShop\Core\Grid\GridFactoryInterface;
+use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageFileNotFoundException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageConstraintException;
 use PrestaShop\PrestaShop\Core\Search\Filters\LanguageFilters;
 use PrestaShop\PrestaShop\Core\Util\Url\UrlFileCheckerInterface;
@@ -305,6 +306,11 @@ class LanguageController extends PrestaShopAdminController
                 'You cannot change the status of the default language.',
                 [],
                 'Admin.International.Notification'
+            ),
+            ImageFileNotFoundException::class => $this->trans(
+                'The uploaded file could not be found on the server. It may have been removed before the upload finished.',
+                [],
+                'Admin.Notifications.Error'
             ),
             UploadedImageConstraintException::class => [
                 UploadedImageConstraintException::EXCEEDED_SIZE => $this->trans(

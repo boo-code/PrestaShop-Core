@@ -31,6 +31,7 @@ use PrestaShop\PrestaShop\Core\Grid\Definition\Factory\GridDefinitionFactoryInte
 use PrestaShop\PrestaShop\Core\Grid\GridFactoryInterface;
 use PrestaShop\PrestaShop\Core\Grid\Position\Exception\PositionUpdateException;
 use PrestaShop\PrestaShop\Core\Grid\Position\PositionDefinition;
+use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageFileNotFoundException;
 use PrestaShop\PrestaShop\Core\Search\Filters\CarrierFilters;
 use PrestaShopBundle\Controller\Admin\PrestaShopAdminController;
 use PrestaShopBundle\Security\Attribute\AdminSecurity;
@@ -355,6 +356,11 @@ class CarrierController extends PrestaShopAdminController
     private function getErrorMessages(): array
     {
         return [
+            ImageFileNotFoundException::class => $this->trans(
+                'The uploaded file could not be found on the server. It may have been removed before the upload finished.',
+                [],
+                'Admin.Notifications.Error'
+            ),
             CarrierNotFoundException::class => $this->trans(
                 'The object cannot be loaded (or found).',
                 [],

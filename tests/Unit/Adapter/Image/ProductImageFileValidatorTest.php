@@ -10,6 +10,7 @@ namespace Tests\Unit\Adapter\Image;
 use PHPUnit\Framework\TestCase;
 use PrestaShop\PrestaShop\Adapter\Image\ProductImageFileValidator;
 use PrestaShop\PrestaShop\Core\Configuration\DataConfigurationInterface;
+use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageFileNotFoundException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\ImageUploadException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageConstraintException;
 use PrestaShop\PrestaShop\Core\Image\Uploader\Exception\UploadedImageSizeException;
@@ -38,6 +39,19 @@ class ProductImageFileValidatorTest extends TestCase
         $this->expectException(UploadedImageSizeException::class);
 
         $imageValidator->assertFileUploadLimits($filePath);
+    }
+
+    public function testItThrowsExceptionWhenTheFileIsMissing(): void
+    {
+        $imageValidator = new ProductImageFileValidator(1000000, $this->mockQuotaConfiguration(1000000));
+
+        // WHY: filesize() on a missing path warns and returns false, and (string) false is "", so
+        // without the existence guard this reported `"" cannot be interpreted as a number` from the
+        // decimal parser rather than the missing file. An upload whose temporary file was consumed
+        // by another module reaches this validator exactly that way.
+        $this->expectException(ImageFileNotFoundException::class);
+
+        $imageValidator->assertFileUploadLimits(DummyFileUploader::getDummyFilesPath() . 'this-file-does-not-exist.jpg');
     }
 
     /**
