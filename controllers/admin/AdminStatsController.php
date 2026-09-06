@@ -207,13 +207,16 @@ class AdminStatsControllerCore extends AdminStatsTabController
      *
      * @return string
      */
-    protected static function getCountedBetweenSql($dateFrom, $dateTo)
+    protected static function getCountedBetweenSql($dateFrom, $dateTo, string $alias = '')
     {
+        // WHY the alias: getBestCategory() joins the orders table next to the product table, which
+        // carries a date_add of its own, so the columns have to be qualified there.
+        $prefix = '' === $alias ? '' : '`' . $alias . '`.';
         $from = '"' . pSQL($dateFrom) . ' 00:00:00"';
         $to = '"' . pSQL($dateTo) . ' 23:59:59"';
 
-        return '(`invoice_date` BETWEEN ' . $from . ' AND ' . $to
-            . ' OR (`invoice_date` <= "1000-01-01 00:00:00" AND `date_add` BETWEEN ' . $from . ' AND ' . $to . '))';
+        return '(' . $prefix . '`invoice_date` BETWEEN ' . $from . ' AND ' . $to
+            . ' OR (' . $prefix . '`invoice_date` <= "1000-01-01 00:00:00" AND ' . $prefix . '`date_add` BETWEEN ' . $from . ' AND ' . $to . '))';
     }
 
     public static function getTotalSales($date_from, $date_to, $granularity = false)
@@ -385,7 +388,7 @@ class AdminStatsControllerCore extends AdminStatsTabController
 				FROM `' . _DB_PREFIX_ . 'product` pr
 				LEFT OUTER JOIN `' . _DB_PREFIX_ . 'order_detail` cp ON pr.`id_product` = cp.`product_id`
 				LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON o.`id_order` = cp.`id_order`
-				WHERE o.invoice_date BETWEEN "' . pSQL($date_from) . ' 00:00:00" AND "' . pSQL($date_to) . ' 23:59:59"
+				WHERE ' . self::getCountedBetweenSql($date_from, $date_to, 'o') . '
 				GROUP BY pr.`id_product`
 			) t ON t.`id_product` = pr.`id_product`
 		) t	ON t.`id_product` = capr.`id_product`
@@ -902,9 +905,10 @@ class AdminStatsControllerCore extends AdminStatsTabController
 					COUNT(`id_order`) AS orders,
 					SUM(`total_paid_tax_excl` / `conversion_rate`) AS total_paid_tax_excl
 				FROM `' . _DB_PREFIX_ . 'orders`
-				WHERE `invoice_date` BETWEEN "' . pSQL(date('Y-m-d', strtotime('-31 day'))) . ' 00:00:00" AND "' . pSQL(
+				WHERE ' . self::getCountedBetweenSql(
+                        date('Y-m-d', strtotime('-31 day')),
                         date('Y-m-d', strtotime('-1 day'))
-                    ) . ' 23:59:59"
+                    ) . '
 				' . Shop::addSqlRestriction()
                 );
                 $value = $this->context->getCurrentLocale()->formatPrice(

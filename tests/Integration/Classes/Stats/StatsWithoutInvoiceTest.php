@@ -29,7 +29,7 @@ class StatsWithoutInvoiceTest extends TestCase
 
     protected function tearDown(): void
     {
-        DatabaseDump::restoreTables(['orders']);
+        DatabaseDump::restoreTables(['orders', 'order_detail']);
 
         parent::tearDown();
     }
@@ -47,6 +47,64 @@ class StatsWithoutInvoiceTest extends TestCase
         $this->insertOrder(self::DAY . ' 10:00:00', '2019-03-03 10:00:00');
 
         $this->assertSame(1, $this->countOrdersOnTheDay());
+    }
+
+    /**
+     * The category and average-cart figures were left on the raw column when the rest moved, so an
+     * order without an invoice date still counted for nothing there.
+     */
+    /**
+     * getBestCategory() joins the orders table alongside the product table, which carries a date_add
+     * of its own, so the date test has to name the alias. Left unqualified the query dies with
+     * "Column 'date_add' in where clause is ambiguous" - this pins that down.
+     */
+    public function testTheBestCategoryQueryRunsWithTheOrdersTableJoinedNextToProducts(): void
+    {
+        $productId = (int) Db::getInstance()->getValue(
+            'SELECT cp.id_product FROM ' . _DB_PREFIX_ . 'category_product cp ORDER BY cp.id_product'
+        );
+        $this->insertOrderWithAProduct('0000-00-00 00:00:00', $productId);
+
+        $this->assertNotNull(AdminStatsController::getBestCategory(self::DAY, self::DAY));
+    }
+
+    /**
+     * The defect this file is about is a query being left on the raw column while the rest moved, and
+     * the average-cart KPI is built inside displayAjaxGetKpi(), which echoes JSON and cannot be called
+     * from a test. Assert the property on the source instead: outside the two helpers that own the
+     * column, the controller must not mention it at all.
+     */
+    public function testNoQueryIsLeftOnTheRawInvoiceDateColumn(): void
+    {
+        $source = (string) file_get_contents(_PS_ROOT_DIR_ . '/controllers/admin/AdminStatsController.php');
+        $this->assertNotSame('', $source);
+
+        $helpers = [];
+        foreach (['getCountedAtSql', 'getCountedBetweenSql'] as $helper) {
+            $from = strpos($source, 'protected static function ' . $helper);
+            $this->assertNotFalse($from, $helper . '() is the seam this test relies on');
+            $helpers[] = substr($source, $from, strpos($source, "\n    }", $from) - $from);
+        }
+
+        $this->assertStringNotContainsString(
+            'invoice_date',
+            str_replace($helpers, '', $source),
+            'a statistics query still restricts itself to the invoice date, so an order whose status'
+            . ' issues no invoice is missing from it'
+        );
+    }
+
+    private function insertOrderWithAProduct(string $invoiceDate, int $productId): void
+    {
+        $this->insertOrder($invoiceDate);
+        $orderId = (int) Db::getInstance()->Insert_ID();
+
+        Db::getInstance()->execute(
+            'INSERT INTO ' . _DB_PREFIX_ . 'order_detail
+                (id_order, id_order_invoice, id_warehouse, id_shop, product_id, product_attribute_id, product_name, product_quantity,
+                 product_price, unit_price_tax_excl, unit_price_tax_incl, total_price_tax_excl, total_price_tax_incl)
+             VALUES (' . $orderId . ', 0, 0, 1, ' . $productId . ', 0, "QA", 1, 10, 10, 10, 10, 10)'
+        );
     }
 
     private function countOrdersOnTheDay(): int
