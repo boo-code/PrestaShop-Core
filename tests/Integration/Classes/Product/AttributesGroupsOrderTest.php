@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Classes\Product;
 
+use Configuration;
 use Db;
 use Product;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -41,14 +42,29 @@ class AttributesGroupsOrderTest extends KernelTestCase
 
     protected function tearDown(): void
     {
-        Db::deleteTestingInstance();
+        $this->restoreRealDb();
         parent::tearDown();
+    }
+
+    /**
+     * WHY: Db::setInstanceForTesting() replaces the connection GLOBALLY, so anything reached while the
+     * mock is installed reads [] and can memoise that emptiness in a static that outlives the swap -
+     * Configuration's cache being the one that matters, since an empty configuration yields id_lang 0
+     * and an empty shop context for every later test in the run. Put the real connection back and
+     * re-read the configuration from it, rather than only dropping the mock.
+     */
+    private function restoreRealDb(): void
+    {
+        Db::deleteTestingInstance();
+        Configuration::loadConfiguration();
     }
 
     public function testTheOrderByIsTotal(): void
     {
-        $sql = $this->captureQueryOf(static function (): void {
-            (new Product(1, false, 1))->getAttributesGroups(1);
+        // Built before the mock goes in, so the constructor's own queries hit the real connection.
+        $product = new Product(1, false, 1);
+        $sql = $this->captureQueryOf(static function () use ($product): void {
+            $product->getAttributesGroups(1);
         });
 
         $this->assertStringContainsString('ORDER BY', $sql, 'the query must be ordered at all');
@@ -61,8 +77,10 @@ class AttributesGroupsOrderTest extends KernelTestCase
 
     public function testTheTieBreakerComesLastSoTheDocumentedOrderIsKept(): void
     {
-        $sql = $this->captureQueryOf(static function (): void {
-            (new Product(1, false, 1))->getAttributesGroups(1);
+        // Built before the mock goes in, so the constructor's own queries hit the real connection.
+        $product = new Product(1, false, 1);
+        $sql = $this->captureQueryOf(static function () use ($product): void {
+            $product->getAttributesGroups(1);
         });
 
         preg_match('/ORDER BY(.*)$/is', $sql, $matches);
@@ -84,13 +102,18 @@ class AttributesGroupsOrderTest extends KernelTestCase
 
             return [];
         });
-        Db::setInstanceForTesting($mock);
 
-        $call();
+        // Keep the window around the mocked connection as small as the measurement allows: only the
+        // call under test runs against it, and the real connection is back before any assertion.
+        Db::setInstanceForTesting($mock);
+        try {
+            $call();
+        } finally {
+            $this->restoreRealDb();
+        }
 
         $this->assertNotEmpty($this->executedQueries, 'no query was issued, so this test proves nothing');
 
-        // the product constructor queries too, so pick the one this test is about
         foreach ($this->executedQueries as $sql) {
             if (false !== stripos($sql, 'id_attribute_group')) {
                 return $sql;
