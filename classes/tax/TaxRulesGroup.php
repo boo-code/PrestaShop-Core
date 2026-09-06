@@ -105,6 +105,12 @@ class TaxRulesGroupCore extends ObjectModel
 		WHERE id_tax_rule=' . (int) $id_tax_rule
         );
 
+        // A rule being created has no id yet, so there is no historized rule to map it from.
+        // Without this the row below is false and every field read off it raises a warning.
+        if (!$params) {
+            return false;
+        }
+
         return Db::getInstance()->getValue(
             '
 		SELECT id_tax_rule
