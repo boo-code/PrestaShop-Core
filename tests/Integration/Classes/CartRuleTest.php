@@ -10,6 +10,7 @@ namespace Tests\Integration\Classes;
 
 use CartRule;
 use Customer;
+use Db;
 use PHPUnit\Framework\TestCase;
 use PrestaShop\PrestaShop\Adapter\Configuration;
 use PrestaShop\PrestaShop\Core\Domain\Shop\ValueObject\ShopConstraint;
@@ -39,6 +40,7 @@ class CartRuleTest extends TestCase
             [
                 'cart_rule',
                 'cart_rule_lang',
+                'cart_rule_combination',
             ]
         );
     }
@@ -358,6 +360,64 @@ class CartRuleTest extends TestCase
      *
      * @return CartRule
      */
+    /**
+     * The combination table stores a pair without normalising its orientation, so a shop that has saved
+     * cart rule restrictions in the back office ends up holding both (A, B) and (B, A). copyConditions()
+     * maps both of those rows onto the same destination pair, and the INSERT then collides with itself.
+     *
+     * It matters well beyond the copy: the only caller is PaymentModule::validateOrder() creating the
+     * remainder voucher for a partially used one, and that path is not wrapped in a transaction, so the
+     * throw leaves an order with a captured payment and no state at all.
+     */
+    public function testConditionsAreCopiedOnceWhenACombinationIsStoredInBothOrientations(): void
+    {
+        $source = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+        $other = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+        $destination = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+
+        // What the back office restriction inserts leave behind over time.
+        Db::getInstance()->insert('cart_rule_combination', [
+            'id_cart_rule_1' => (int) $source->id,
+            'id_cart_rule_2' => (int) $other->id,
+        ]);
+        Db::getInstance()->insert('cart_rule_combination', [
+            'id_cart_rule_1' => (int) $other->id,
+            'id_cart_rule_2' => (int) $source->id,
+        ]);
+
+        CartRule::copyConditions((int) $source->id, (int) $destination->id);
+
+        $copied = Db::getInstance()->executeS(
+            'SELECT id_cart_rule_2 FROM ' . _DB_PREFIX_ . 'cart_rule_combination'
+            . ' WHERE id_cart_rule_1 = ' . (int) $destination->id
+        );
+
+        $this->assertCount(1, $copied, 'the pair was copied once per stored orientation');
+        $this->assertSame((int) $other->id, (int) $copied[0]['id_cart_rule_2']);
+    }
+
+    public function testASingleOrientationIsStillCopied(): void
+    {
+        $source = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+        $other = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+        $destination = $this->createDummyCartRule(true, (int) $this->dummyCustomer->id);
+
+        Db::getInstance()->insert('cart_rule_combination', [
+            'id_cart_rule_1' => (int) $source->id,
+            'id_cart_rule_2' => (int) $other->id,
+        ]);
+
+        CartRule::copyConditions((int) $source->id, (int) $destination->id);
+
+        // Guards the de-duplication against throwing the row away instead of collapsing it.
+        $copied = Db::getInstance()->executeS(
+            'SELECT id_cart_rule_2 FROM ' . _DB_PREFIX_ . 'cart_rule_combination'
+            . ' WHERE id_cart_rule_1 = ' . (int) $destination->id
+        );
+        $this->assertCount(1, $copied);
+        $this->assertSame((int) $other->id, (int) $copied[0]['id_cart_rule_2']);
+    }
+
     public function createDummyCartRule(
         bool $active,
         int $customerId,
