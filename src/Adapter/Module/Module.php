@@ -6,11 +6,14 @@
 
 namespace PrestaShop\PrestaShop\Adapter\Module;
 
+use Configuration;
 use Exception;
 use Module as LegacyModule;
 use PrestaShop\PrestaShop\Core\Addon\AddonListFilterOrigin;
 use PrestaShop\PrestaShop\Core\Module\ModuleInterface;
+use PrestaShopLogger;
 use Symfony\Component\HttpFoundation\ParameterBag;
+use Throwable;
 
 /**
  * This class is the interface to the legacy Module class.
@@ -283,6 +286,47 @@ class Module implements ModuleInterface
     public function onUpgrade(string $version): bool
     {
         $this->database->set('version', $this->attributes->get('version_available'));
+
+        return $this->refreshOverrides();
+    }
+
+    /**
+     * Reinstall the module's overrides from the files the upgraded version ships.
+     *
+     * WHY: upgrading was the only lifecycle transition that left overrides alone - install() and
+     * enable() add them, uninstall() and disable() remove them - so a module shipping a changed
+     * override kept running the version it was installed with until someone disabled and re-enabled
+     * it by hand. The instance is rebuilt from the new files by then, so removing and reinstalling
+     * here publishes the override the upgraded version actually declares.
+     */
+    private function refreshOverrides(): bool
+    {
+        if (Configuration::get('PS_DISABLE_MODULE_OVERRIDES') || !$this->hasValidInstance()) {
+            return true;
+        }
+
+        if ($this->instance->getOverrides() === null) {
+            return true;
+        }
+
+        try {
+            $this->instance->uninstallOverrides();
+            $this->instance->installOverrides();
+        } catch (Throwable $e) {
+            // Mirrors Module::enable(): a half-written override file is worse than an outdated one,
+            // so take back whatever was added before reporting the upgrade as failed.
+            $this->instance->uninstallOverrides();
+            PrestaShopLogger::addLog(
+                sprintf('Unable to refresh the overrides of module %s: %s', $this->attributes->get('name'), $e->getMessage()),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                null,
+                'Module',
+                null,
+                true
+            );
+
+            return false;
+        }
 
         return true;
     }
