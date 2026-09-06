@@ -66,7 +66,6 @@
       <taxRule iso_code_country="sk" id_tax="1"/>
       <taxRule iso_code_country="fi" id_tax="1"/>
       <taxRule iso_code_country="se" id_tax="1"/>
-      <taxRule iso_code_country="gb" id_tax="1"/>
     </taxRulesGroup>
     <taxRulesGroup name="SI Reduced Rate (9.5%)">
       <taxRule iso_code_country="be" id_tax="2"/>
@@ -97,7 +96,6 @@
       <taxRule iso_code_country="sk" id_tax="2"/>
       <taxRule iso_code_country="fi" id_tax="2"/>
       <taxRule iso_code_country="se" id_tax="2"/>
-      <taxRule iso_code_country="gb" id_tax="2"/>
     </taxRulesGroup>
     <taxRulesGroup name="SI Foodstuff Rate (9.5%)">
       <taxRule iso_code_country="be" id_tax="2"/>
@@ -128,7 +126,6 @@
       <taxRule iso_code_country="sk" id_tax="2"/>
       <taxRule iso_code_country="fi" id_tax="2"/>
       <taxRule iso_code_country="se" id_tax="2"/>
-      <taxRule iso_code_country="gb" id_tax="2"/>
     </taxRulesGroup>
     <taxRulesGroup name="SI Books Rate (9.5%)">
       <taxRule iso_code_country="be" id_tax="2"/>
@@ -159,7 +156,6 @@
       <taxRule iso_code_country="sk" id_tax="2"/>
       <taxRule iso_code_country="fi" id_tax="2"/>
       <taxRule iso_code_country="se" id_tax="2"/>
-      <taxRule iso_code_country="gb" id_tax="2"/>
     </taxRulesGroup>
     <taxRulesGroup name="EU VAT For Virtual Products" auto-generated="1" eu-tax-group="virtual">
       <taxRule iso_code_country="si" id_tax="1"/>
@@ -174,7 +170,6 @@
       <taxRule iso_code_country="es" id_tax="11"/>
       <taxRule iso_code_country="fi" id_tax="12"/>
       <taxRule iso_code_country="fr" id_tax="13"/>
-      <taxRule iso_code_country="gb" id_tax="14"/>
       <taxRule iso_code_country="gr" id_tax="15"/>
       <taxRule iso_code_country="hr" id_tax="16"/>
       <taxRule iso_code_country="hu" id_tax="17"/>
