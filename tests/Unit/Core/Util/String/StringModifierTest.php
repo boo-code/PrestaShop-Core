@@ -204,4 +204,43 @@ class StringModifierTest extends TestCase
         yield 'Test a variations' => ['aaâæaa', 'aaaaeaa'];
         yield 'Test e variations' => ['éèê', 'eee'];
     }
+
+    /**
+     * The back office builds the friendly URL with the JavaScript twin of this method, str2url() in
+     * js/admin.js, while the merchant types. These are the characters where the move to the ICU
+     * transliterator in 8.0 silently stopped agreeing with it, so one product name produced two
+     * different URLs depending on whether it was saved from the back office or through the webservice,
+     * an import or a CQRS command.
+     *
+     * @dataProvider getStringsThatMustMatchTheJavaScriptTwin
+     */
+    public function testStr2urlAgreesWithItsJavaScriptTwin(string $input, string $expected): void
+    {
+        self::assertSame($expected, $this->stringModifier->str2url($input, false));
+    }
+
+    public function getStringsThatMustMatchTheJavaScriptTwin(): Generator
+    {
+        yield 'zhe' => ['жук', 'zhuk'];
+        yield 'ha' => ['хлеб', 'khleb'];
+        yield 'che' => ['Чай', 'chaj'];
+        yield 'sha' => ['шар', 'shar'];
+        yield 'shcha' => ['щит', 'sshit'];
+        yield 'yu' => ['юг', 'yug'];
+        yield 'ya' => ['яма', 'yama'];
+        yield 'io' => ['Ёлка', 'yolka'];
+        yield 'ukrainian ie' => ['єдність', 'yednist'];
+        yield 'yi' => ['їжак', 'yizhak'];
+
+        // A symbol must not survive as a letter: ICU writes the registered sign as "(R)" and the
+        // numero sign as "No", and the character filter then kept those letters.
+        yield 'registered sign' => ['Copyright ®', 'copyright'];
+        yield 'copyright sign' => ['© Acme', 'acme'];
+        yield 'numero sign' => ['№ 5', '5'];
+
+        // Characters that already agreed must keep agreeing.
+        yield 'ligature is unchanged' => ['Œuvre', 'oeuvre'];
+        yield 'accents are unchanged' => ['naïve café', 'naive-cafe'];
+        yield 'plain cyrillic is unchanged' => ['Крем', 'krem'];
+    }
 }

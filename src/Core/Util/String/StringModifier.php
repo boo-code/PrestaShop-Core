@@ -14,6 +14,27 @@ use Transliterator;
 final class StringModifier implements StringModifierInterface
 {
     /**
+     * Transliterations PrestaShop has always written with two letters, where ICU writes one.
+     *
+     * WHY: str2url() has a JavaScript twin in js/admin.js that the back office uses to build the
+     * friendly URL while the merchant types. Until 8.0 the PHP side used a hand written table that
+     * agreed with it on these characters; moving to the ICU transliterator silently reduced them to a
+     * single letter, so the same product name yielded a different URL depending on whether it was
+     * saved from the back office or through the webservice, an import or a CQRS command.
+     */
+    private const TRANSLITERATION_OVERRIDES = [
+        'ж' => 'zh', 'Ж' => 'Zh',
+        'х' => 'kh', 'Х' => 'Kh',
+        'ч' => 'ch', 'Ч' => 'Ch',
+        'ш' => 'sh', 'Ш' => 'Sh',
+        'щ' => 'ssh', 'Щ' => 'Ssh',
+        'ю' => 'yu', 'Ю' => 'Yu',
+        'я' => 'ya', 'Я' => 'Ya',
+        'ё' => 'yo', 'Ё' => 'Yo',
+        'є' => 'ye', 'Є' => 'Ye',
+        'ї' => 'yi', 'Ї' => 'Yi',
+    ];
+    /**
      * @var Transliterator|null
      */
     private $transliterator;
@@ -105,6 +126,11 @@ final class StringModifier implements StringModifierInterface
         if ($allow_accented_chars) {
             $return_str = preg_replace('/[^a-zA-Z0-9\s\'\:\/\[\]\-\p{L}]/u', '', $return_str);
         } else {
+            // WHY: a symbol must not survive as a letter. ICU renders the registered sign as "(R)" and
+            // the numero sign as "No", and the whitelist below then keeps those letters, so
+            // "Copyright (R)" ended up as "copyright-r". Removing symbols first matches the accented
+            // branch above, which never keeps them, and the JavaScript twin.
+            $return_str = preg_replace('/\p{S}/u', '', $return_str);
             $return_str = $this->replaceAccentedChars($return_str);
             $return_str = preg_replace('/[^a-zA-Z0-9\s\'\:\/\[\]\-]/', '', $return_str);
         }
@@ -137,6 +163,6 @@ final class StringModifier implements StringModifierInterface
             $this->transliterator = Transliterator::create('Any-Latin; Latin-ASCII');
         }
 
-        return $this->transliterator->transliterate($string);
+        return $this->transliterator->transliterate(strtr($string, self::TRANSLITERATION_OVERRIDES));
     }
 }
