@@ -1090,13 +1090,17 @@ class CartCore extends ObjectModel
         &$specificPriceOutput
     ): array {
         $cartPrices = [];
+        // WHY: getOrderTotal() reads the same setting for the rows it builds itself (see the CartRow
+        // loop below), so hard-coding the ecotax in here made the cart disagree with its own total as
+        // soon as the feature was switched off while a product still carried an ecotax value.
+        $withEcoTax = (bool) $this->configuration->get('PS_USE_ECOTAX');
         $cartPrices['price_without_reduction'] = $this->getCartPriceFromCatalog(
             (int) $productRow['id_product'],
             isset($productRow['id_product_attribute']) ? (int) $productRow['id_product_attribute'] : null,
             (int) $productRow['id_customization'],
             true,
             false,
-            true,
+            $withEcoTax,
             $productQuantity,
             $addressId,
             $shopContext,
@@ -1109,7 +1113,7 @@ class CartCore extends ObjectModel
             (int) $productRow['id_customization'],
             false,
             false,
-            true,
+            $withEcoTax,
             $productQuantity,
             $addressId,
             $shopContext,
@@ -1122,7 +1126,7 @@ class CartCore extends ObjectModel
             (int) $productRow['id_customization'],
             true,
             true,
-            true,
+            $withEcoTax,
             $productQuantity,
             $addressId,
             $shopContext,
@@ -1135,7 +1139,7 @@ class CartCore extends ObjectModel
             (int) $productRow['id_customization'],
             false,
             true,
-            true,
+            $withEcoTax,
             $productQuantity,
             $addressId,
             $shopContext,
