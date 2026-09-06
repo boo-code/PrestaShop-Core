@@ -6,6 +6,8 @@
 
 namespace Tests\Integration\Classes\controller;
 
+use AdminController;
+use Configuration;
 use Context;
 use Controller;
 use Cookie;
@@ -69,6 +71,13 @@ class AdminControllerTest extends TestCase
     protected function tearDown(): void
     {
         ServiceLocator::setServiceContainerInstance($this->savedContainer);
+
+        // The option tests reach the save branch once validation passes, which writes the value for
+        // real. Leaving it behind would hand the next test a configuration key it never set.
+        foreach (Language::getLanguages(false) as $language) {
+            unset($_POST[TextareaLangOptionsController::OPTION . '_' . $language['id_lang']]);
+        }
+        Configuration::deleteByName(TextareaLangOptionsController::OPTION);
     }
 
     /**
@@ -394,11 +403,84 @@ class AdminControllerTest extends TestCase
         return $mockMockFeatureInterface;
     }
 
+
+    /**
+     * A required option of type textareaLang is posted per language, as FIELD_1, FIELD_2 and so on.
+     * The required check only expanded textLang into those per-language names; for a textareaLang it
+     * read the bare FIELD, which such a field never posts, so a filled field was always reported
+     * missing. The save path further down already treats both types the same way, which is what
+     * makes this an inconsistency rather than a design choice.
+     */
+    public function testARequiredTextareaLangOptionIsAcceptedWhenItIsFilled(): void
+    {
+        $controller = new TextareaLangOptionsController();
+
+        foreach (Language::getLanguages(false) as $language) {
+            $_POST[TextareaLangOptionsController::OPTION . '_' . $language['id_lang']] = 'a blacklisted word';
+        }
+
+        $this->invokeProcessUpdateOptions($controller);
+
+        $this->assertSame([], $controller->errors);
+    }
+
+    /**
+     * The control. Without it the test above would pass just as well against a required check that
+     * never reports anything at all.
+     */
+    public function testARequiredTextareaLangOptionIsStillRefusedWhenItIsEmpty(): void
+    {
+        $controller = new TextareaLangOptionsController();
+
+        foreach (Language::getLanguages(false) as $language) {
+            $_POST[TextareaLangOptionsController::OPTION . '_' . $language['id_lang']] = '';
+        }
+
+        $this->invokeProcessUpdateOptions($controller);
+
+        $this->assertNotEmpty($controller->errors);
+    }
+
+    private function invokeProcessUpdateOptions(AdminController $controller): void
+    {
+        $method = new ReflectionMethod($controller, 'processUpdateOptions');
+        $method->setAccessible(true);
+        $method->invoke($controller);
+    }
+
     private function getMockedUserTokenManager(): UserTokenManager
     {
         $userTokenManager = $this->createMock(UserTokenManager::class);
         $userTokenManager->method('getSymfonyToken')->willReturn('mockedToken');
 
         return $userTokenManager;
+    }
+}
+
+
+/**
+ * Carries a single required option of the type under test, so the check runs against a controller
+ * whose configuration is part of the test rather than against whatever a real page happens to declare.
+ */
+class TextareaLangOptionsController extends AdminController
+{
+    public const OPTION = 'TEST_TEXTAREA_LANG_OPTION';
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->fields_options = [
+            'test' => [
+                'title' => 'Test',
+                'fields' => [
+                    self::OPTION => [
+                        'title' => 'Blacklisted words',
+                        'type' => 'textareaLang',
+                        'required' => true,
+                    ],
+                ],
+            ],
+        ];
     }
 }
