@@ -395,7 +395,7 @@ class MailCore extends ObjectModel
             if ($iso) {
                 $isoArray[] = $iso;
             }
-            $isoDefault = Language::getIsoById((int) Configuration::get('PS_LANG_DEFAULT'));
+            $isoDefault = Language::getIsoById((int) Configuration::get('PS_LANG_DEFAULT', null, null, $idShop));
             if ($isoDefault && $iso !== $isoDefault) {
                 $isoArray[] = $isoDefault;
             }

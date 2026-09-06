@@ -1425,7 +1425,7 @@ class LinkCore
 
         // If the language is our default language, no prefix needed
         if (
-            $idLang == Configuration::get('PS_LANG_DEFAULT')
+            $idLang == Configuration::get('PS_LANG_DEFAULT', null, null, $idShop)
             && (bool) Configuration::get('PS_DEFAULT_LANGUAGE_URL_PREFIX', null, null, $idShop) === false
         ) {
             return '';
