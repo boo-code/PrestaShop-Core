@@ -45,25 +45,43 @@ class CachingTypeTest extends TypeTestCase
     }
 
     /**
-     * The other two systems back no Symfony adapter, so loading the extension stays the only
-     * thing that can be tested for them.
+     * The remaining system backs no Symfony adapter, so loading the extension stays the only thing
+     * that can be tested for it.
      */
     public function testASystemWithNoSymfonyAdapterStillGoesByTheExtension(): void
     {
         $this->assertSame(extension_loaded('memcache'), $this->isOffered('CacheMemcache'));
-        $this->assertSame(extension_loaded('xcache'), $this->isOffered('CacheXcache'));
     }
 
     /**
-     * Xcache has no build for any PHP version this release supports, so it is the one option
-     * that is unavailable everywhere - which makes it the fixed point for the disabled path.
+     * Xcache is not proposed any more: its last release supports PHP 5.6, so no version this
+     * release runs on can have it, and offering it put a "go and install this" link in front of
+     * merchants for something they can never install.
      */
+    public function testXcacheIsNotOffered(): void
+    {
+        $this->assertSame(
+            ['CacheMemcache', 'CacheMemcached', 'CacheApc'],
+            $this->offeredSystems()
+        );
+    }
+
     public function testAnUnavailableSystemIsDisabledAndSaysHowToInstallIt(): void
     {
-        $option = $this->option('CacheXcache');
+        foreach ($this->offeredSystems() as $system) {
+            $option = $this->option($system);
 
-        $this->assertTrue($option->vars['attr']['disabled']);
-        $this->assertStringContainsString('you must install', $option->vars['label']);
+            if (!isset($option->vars['attr']['disabled'])) {
+                continue;
+            }
+
+            $this->assertTrue($option->vars['attr']['disabled']);
+            $this->assertStringContainsString('you must install', $option->vars['label']);
+
+            return;
+        }
+
+        $this->markTestSkipped('Every caching system is available here, so the disabled path cannot be reached.');
     }
 
     /**
@@ -74,7 +92,7 @@ class CachingTypeTest extends TypeTestCase
      */
     public function testTheDisabledStateAndTheInstallMessageAlwaysAgree(): void
     {
-        foreach (['CacheMemcache', 'CacheMemcached', 'CacheApc', 'CacheXcache'] as $system) {
+        foreach ($this->offeredSystems() as $system) {
             $option = $this->option($system);
 
             // An available option keeps the plain choice as its label; an unavailable one swaps
@@ -85,6 +103,19 @@ class CachingTypeTest extends TypeTestCase
                 $system
             );
         }
+    }
+
+    /**
+     * @return string[] the caching systems the form proposes, in the order it proposes them
+     */
+    private function offeredSystems(): array
+    {
+        $view = $this->factory->create(CachingType::class)->createView();
+
+        return array_map(
+            static fn (FormView $option): string => $option->vars['value'],
+            $view['caching_system']->children
+        );
     }
 
     private function isOffered(string $system): bool
