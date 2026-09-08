@@ -132,6 +132,15 @@ class CccReducerCore
      */
     private function getFileNameIdentifierFromList(array $files)
     {
-        return substr(sha1(implode('|', $files)), 0, 6);
+        $identity = [];
+        foreach ($files as $file) {
+            // The modification time is part of the identity, so editing a file changes the bundle's
+            // name and browsers fetch it again. Without it the name only follows the list of paths,
+            // so an edited file kept the same URL until PS_CCCCSS_VERSION was bumped by hand.
+            $modifiedAt = @filemtime($file);
+            $identity[] = false === $modifiedAt ? $file : $file . '?' . $modifiedAt;
+        }
+
+        return substr(sha1(implode('|', $identity)), 0, 6);
     }
 }
