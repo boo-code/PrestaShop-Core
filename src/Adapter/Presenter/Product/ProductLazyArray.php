@@ -1513,7 +1513,7 @@ class ProductLazyArray extends AbstractLazyArray
                 $this->product[
                     'availability_submessage'
                 ] = $this->translator->trans(
-                    'Product available with different options',
+                    'Other product variations available',
                     [],
                     'Shop.Theme.Catalog'
                 );
