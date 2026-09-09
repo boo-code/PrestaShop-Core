@@ -128,7 +128,12 @@ abstract class HTMLTemplateCore
         }
 
         $this->smarty->assign([
-            'logo_path' => Tools::getShopProtocol() . Tools::getMediaServer(_PS_IMG_) . _PS_IMG_ . $logo,
+            // A filesystem path, not a URL: the PDF renderer reads this file directly, and handing it an
+            // http(s) address made the shop fetch its own logo back over the network. That fails whenever
+            // it cannot reach its own public address - a non-default port, split DNS, a container behind
+            // a proxy - and the invoice is then produced with no logo. HTMLTemplateSupplyOrderForm has
+            // always passed a path here; the product thumbnails in the invoice are local paths too.
+            'logo_path' => !empty($logo) ? _PS_IMG_DIR_ . $logo : '',
             'img_ps_dir' => Tools::getShopProtocol() . Tools::getMediaServer(_PS_IMG_) . _PS_IMG_,
             'img_update_time' => Configuration::get('PS_IMG_UPDATE_TIME'),
             'date' => $this->date,
