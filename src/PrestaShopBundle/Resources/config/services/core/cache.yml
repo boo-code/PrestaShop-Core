@@ -11,6 +11,13 @@ services:
     calls:
       - [ 'setLogger', [ '@logger' ] ]
 
+  prestashop.adapter.cache.clearer.theme_json_cache_clearer:
+    class: 'PrestaShop\PrestaShop\Adapter\Cache\Clearer\ThemeJsonCacheClearer'
+    arguments:
+      $logger: '@logger'
+      $filesystem: '@filesystem'
+      $themesConfigDir: '%kernel.project_dir%/config/themes'
+
   prestashop.core.cache.clearer.cache_clearer_chain:
     class: 'PrestaShop\PrestaShop\Core\Cache\Clearer\CacheClearerChain'
     arguments:
@@ -19,6 +26,7 @@ services:
       - '@prestashop.adapter.cache.clearer.xml_cache_clearer'
       - '@prestashop.adapter.cache.clearer.media_cache_clearer'
       - '@prestashop.adapter.cache.clearer.class_index_cache_clearer'
+      - '@prestashop.adapter.cache.clearer.theme_json_cache_clearer'
       - '@PrestaShop\PrestaShop\Adapter\Cache\Clearer\DoctrineCacheClearer'
 
   prestashop.core.cache.clearer.product_cache_clearer_chain:
