@@ -142,7 +142,10 @@ class LegacyLogger implements LoggerInterface
         $object_type = !empty($context['object_type']) ? $context['object_type'] : null;
         $object_id = !empty($context['object_id']) ? $context['object_id'] : null;
         $allow_duplicate = !empty($context['allow_duplicate']) ? $context['allow_duplicate'] : null;
+        // Without it the entry is attributed to whatever employee the legacy context happens to
+        // hold, which is nobody yet while an employee is still being authenticated.
+        $id_employee = !empty($context['id_employee']) ? $context['id_employee'] : null;
 
-        PrestaShopLogger::addLog($message, $pslevel, $error_code, $object_type, $object_id, $allow_duplicate);
+        PrestaShopLogger::addLog($message, $pslevel, $error_code, $object_type, $object_id, $allow_duplicate, $id_employee);
     }
 }

@@ -19,6 +19,14 @@ services:
     arguments:
       $entityManager: '@doctrine.orm.default_entity_manager'
 
+  PrestaShopBundle\EventListener\Admin\EmployeeLoginLogSubscriber:
+    autowire: true
+    autoconfigure: true
+    arguments:
+      # In the Symfony kernels Psr\Log\LoggerInterface is Monolog; this entry belongs in the
+      # employee log, so the legacy bridge is named explicitly.
+      $logger: '@prestashop.adapter.legacy.logger'
+
   # Priority 40 to be called before the RouterListener (which has priority 32)
   PrestaShopBundle\EventListener\Admin\LegacyUrlListener:
     arguments:
