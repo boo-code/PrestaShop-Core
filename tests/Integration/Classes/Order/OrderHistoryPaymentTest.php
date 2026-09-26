@@ -137,6 +137,25 @@ class OrderHistoryPaymentTest extends TestCase
         ));
     }
 
+    public function testThePaymentKeepsTheWholeOrderReference(): void
+    {
+        // A reference can be longer than 9 characters since 9.0 (a module, actionGenerateDocumentReference),
+        // and payments are found back by it.
+        $originalReference = (string) Db::getInstance()->getValue(
+            'SELECT reference FROM ' . _DB_PREFIX_ . 'orders WHERE id_order = ' . $this->orderId
+        );
+        Db::getInstance()->update('orders', ['reference' => 'ORD20261234'], 'id_order = ' . $this->orderId);
+
+        try {
+            $this->moveToPaidStatus();
+
+            $this->assertSame(1, $this->countPayments('ORD20261234'));
+        } finally {
+            Db::getInstance()->delete('order_payment', 'order_reference LIKE "ORD202612%"');
+            Db::getInstance()->update('orders', ['reference' => pSQL($originalReference)], 'id_order = ' . $this->orderId);
+        }
+    }
+
     private function moveToPaidStatus(): void
     {
         $history = new OrderHistory();

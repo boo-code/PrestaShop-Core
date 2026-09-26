@@ -336,7 +336,7 @@ class OrderHistoryCore extends ObjectModel
         }
 
         $payment = new OrderPayment();
-        $payment->order_reference = Tools::substr($order->reference, 0, 9);
+        $payment->order_reference = $order->reference;
         $payment->id_currency = $order->id_currency;
         $payment->amount = $restPaid;
         $payment->payment_method = $paymentMethod instanceof Module ? $paymentMethod->displayName : null;
